@@ -3,11 +3,7 @@
 ## Introduction
 #### In this project, I will be using Deep Learning and LSTM, a type of Recurrent Neural Network, to predict future stock market returns and use those predictions to construct a portfolio that rebalances on a weekly basis.
 
-## Outline
-* [Introduction](## Introduction)  
-* [Data](## Data)  
-* [Model](## Model)  
-* [Trading Strategy and Portfolio Rebalancing](## Trading Strategy and Portfolio Rebalancing)
+
 
 ## Data
 #### All the historical stock price data will be collected using the yahoo finance API (yfinance). However, since there is no market screener API to automatically get results based on  specific criteria, I download a CSV file from the Nasdaq website containing the largest publicly traded companies and from those, I select the largest 30 to use in the model. Moreover, since I am interested in asset performance, I will convert prices to weekly returns. A weekly interval is preferred to a daily interval, as it better captures the general trend of the market and can be more reliable when making predictions.
