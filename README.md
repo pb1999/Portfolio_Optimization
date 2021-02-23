@@ -4,10 +4,10 @@
 #### In this project, I will be using Deep Learning and LSTM, a type of Recurrent Neural Network, to predict future stock market returns and use those predictions to construct a portfolio that rebalances on a weekly basis.
 
 ## Outline
-* [Introduction](##Introduction)  
-* [Data](##Data)  
-* [Model](##Model)  
-* [Trading Strategy and Portfolio Rebalancing](##Trading_Strategy)
+* [Introduction](## Introduction)  
+* [Data](## Data)  
+* [Model](## Model)  
+* [Trading Strategy and Portfolio Rebalancing](## Trading Strategy and Portfolio Rebalancing)
 
 ## Data
 #### All the historical stock price data will be collected using the yahoo finance API (yfinance). However, since there is no market screener API to automatically get results based on  specific criteria, I download a CSV file from the Nasdaq website containing the largest publicly traded companies and from those, I select the largest 30 to use in the model. Moreover, since I am interested in asset performance, I will convert prices to weekly returns. A weekly interval is preferred to a daily interval, as it better captures the general trend of the market and can be more reliable when making predictions.
@@ -138,11 +138,76 @@ for df in securities_by_date:
 ```
 
 #### Below you can see what the model predicts for Apple.
+
+![alt text](https://github.com/pb1999/Momentum_Model/blob/main/Prediction_Apple.PNG)
         
+ 
+## Trading Strategy and Portfolio Rebalancing
+
+#### We already saved the predictions of the model for each stock. The next step is to combine all the predictions in one dataset and keep only the top 10. After that, at each timestep (week), we implement a simple trading algorithm of buying the open market price of the top 10 stocks today and selling the open market price one week from today. Therefore, we create a portfolio comprised of 10 stocks (each stock has equal weight) that rebalances on a weekly basis. Finally, we assume zero transaction costs when buying or selling securities. 
+
+```python 
+
+prediction_data = [stock_predictions[i][0].tolist() for i in range(len(stock_predictions))]
+
+list_of_predictions = []
+dates = pd.date_range(start='1/1/2008', end=datetime.today().strftime('%Y-%m-%d')).tolist()[::7]
+for i in range(len(prediction_data)):
+    
+    df = pd.DataFrame(prediction_data[i]).rename(columns={0:stocks[i]})
+    df['Date'] = dates[-len(df.index):]
+    list_of_predictions.append(df.set_index('Date'))
+    
+df_predictions = reduce(lambda left,right: pd.merge(left,right,on='Date', how = 'outer'), list_of_predictions).fillna(-1000)
+
+column_names = ['10th','9th', '8th', '7th', '6th', '5th', '4th', "3rd", "2nd", "1st"]
+    
+performance = pd.DataFrame(columns = column_names)
+for i in range(len(df_predictions)):
+    performance.loc[len(performance)] = df_predictions.iloc[i].T.sort_values().iloc[-10:].reset_index()['index'].tolist()
+    
+performance['Date'] = dates[-len(performance.index):]
+
+```
+ |  10th |   9th  | 8th  | 7th  | 6th |  5th |  4th |  3rd |  2nd |  1st  |  Date      |
+ | ----- | ------ | ---- | ---- | --- | ---- | ---- | ---- | ---- | ----- | ---------- |     
+ | SHOP  | ABBV   | QCOM |  TSM | JD  | AMGN |   SE |  PDD | ASML | TSLA  | 2021-01-19 |
+ |  MSFT | GOOG   | AMGN | QCOM | TSM |  HDB | ASML |  JD  | TSLA |  SE   | 2021-01-26 |
+ |   TSM |   JD   | HDB  |ASML  | MSFT| NVDA | TSLA | GOOG | BABA |  SE   |2021-02-02  |
+ |  CRM  |  ASML  |  SHOP| NFLX | NVDA| TSLA |  MSFT| GOOG | BABA |   SE  | 2021-02-09 |
+ | HDB   | CRM    | MSFT | BABA |  ZM | NVDA |  GOOG|  SQ  |  SHOP|   SE  |2021-02-16  |
+
+
+```python
+
+portfolio_performance = []
+portfolio_weights = np.array([1/10,1/10,1/10,1/10,1/10,1/10,1/10,1/10,1/10,1/10])
+
+for i in range(len(performance.index) - 2):
+    weekly_securities = yf.download(performance.iloc[i][0:10].tolist(),start= performance.iloc[i][10] ,end= performance.iloc[i+1][10], interval = '1wk')['Open']
+    
+    weekly_securities_2 = weekly_securities.reset_index().dropna().drop_duplicates(subset=['Date']).set_index('Date').pct_change().dropna().values.flatten()
+    portfolio_performance.append(weekly_securities_2)
+ 
+ final_performance = []
+for j in portfolio_performance:
         
-   
+    try:
+        final = j@portfolio_weights
+        
+    except TypeError:
+        final = math.nan
+        
+    except ValueError:
+        final = math.nan
+        
+    final_performance.append(final)
+    
 
+```
 
+#### Finally, we compute the performance of the portfolio that uses this simple trading algorithm and compare it to the performance of the SPY. 
 
+![alt text](https://github.com/pb1999/Momentum_Model/blob/main/Portfolio_Performance.PNG)
 
 
