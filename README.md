@@ -1,12 +1,12 @@
 # Momentum_Model
 
 ## Introduction
-#### In this project, I will be using Deep Learning and LSTM, a type of Recurrent Neural Network, to predict future stock market returns and use those predictions to construct a portfolio that rebalances on a weekly basis.
+#### In this project, I will be using Deep Learning to predict future stock market returns and use those predictions to construct a portfolio with the top performing stocks that automatically rebalances on a weekly basis.
 
 
 
 ## Data
-#### All the historical stock price data will be collected using the yahoo finance API (yfinance). However, since there is no market screener API to automatically get results based on  specific criteria, I download a CSV file from the Nasdaq website containing the largest publicly traded companies and from those, I select the largest 30 to use in the model. Moreover, since I am interested in asset performance, I will convert prices to weekly returns. A weekly interval is preferred to a daily interval, as it better captures the general trend of the market and can be more reliable when making predictions.
+#### All the historical stock market data will be collected using the yahoo finance API (yfinance). However, since there is no market screener API to automatically get key market analytics, I download a CSV file from the Nasdaq website containing the largest publicly traded companies and from those, I select the largest 30 to use in the model. Moreover, since I am interested in asset performance, I will convert prices to weekly returns. A weekly interval is preferred to a daily interval, as it better captures the general trend of the market and can be more reliable when making predictions.
 
 ```python
 
@@ -23,11 +23,10 @@ for i in stocks:
 
 ```
 
-## Model
+## Model 
 
 
-
-#### It is very important to scale features before training a neural network, so before training the model using LSTM, we must normalize the data sets. To achieve that, I split the data into training 70% and testing 30% and subtract from both the mean and divide by the standard deviation. The mean and standard deviation should only be from the training set so that the model has no access to the values in the test set. 
+#### It is very important to scale features before training a neural network, so we must normalize the data sets. To achieve that, I split the data into training 70% and testing 30% and subtract from both the mean and divide by the standard deviation. The mean and standard deviation should only be from the training set so that the model has no access to the values in the test set.
 
 ```python
 class Momentum_Model:
@@ -51,7 +50,7 @@ class Momentum_Model:
         self.train_df, self.test_df, self.train_mean, self.train_std = train_df, test_df, train_mean, train_std 
 
 ```
-#### After normalizing the data, the next step is to reshape them in order to fit LSTM models. The LSTM input layer has three dimensions (samples, timesteps, features). There is only one feature (weekly stock return) and the number of samples is the length of the data set. Moreover, for all samples in the model we use the 5 previous observations in order to predict the 6th, which means that the ```X_train``` , ```X_test``` sets will be five-dimentional np.array with input shapes ```(len(X_train),5,1)``` , ```(len(X_test),5,1)```  and ```y_train``` , ```y_test```  will have input shapes ```(len(y_train),1)``` , ```(len(y_test),1)``` .
+#### After normalizing the data, the next step is to reshape them in order to fit our model. The LSTM input layer has three dimensions (samples, timesteps, features). There is only one feature (weekly stock return) and the number of samples is the length of the data set. Moreover, for all samples in the model we use the 5 previous observations in order to predict the 6th, which means that the ```X_train``` , ```X_test``` sets will be five-dimentional np.array with input shapes ```(len(X_train),5,1)``` , ```(len(X_test),5,1)```  and ```y_train``` , ```y_test```  will have input shapes ```(len(y_train),1)``` , ```(len(y_test),1)``` .
 
 ```python
 def layout(self):
@@ -79,8 +78,8 @@ def layout(self):
         
         
   ```
-
-#### As far as the model is concerned, I will be using a stacked LSTM model comprised of one input layer, three LSTM layers and an output layer (which will be a dense layer with only one output). The first LSTM layer will have 50 units and the second and third will have 30 units. For both the first and the second layers ```return_sequences=True ``` because we want the internal state of the previous layer to pass onto the next layers. Also, I will be using a 20% dropout rate so that the model focuses on more recent data.
+### Model Architecture:
+#### I will be using a stacked LSTM model comprised of one input layer, three LSTM layers and an output layer (which will be a dense layer with only one output). The first LSTM layer will have 50 units and the second and third will have 30 units. For both the first and the second layers ```return_sequences=True ``` because we want the internal state of the previous layer to pass onto the next layers. Also, I will be using a 20% dropout rate so that the model focuses on more recent data.
 
 ```python
 
@@ -101,7 +100,7 @@ def Rnn_model(self, X):
 ```
 
         
-#### For the training of the model, I will be using the Adam algorithm as an optimizer with a learning rate of .001 and a decay of 1e-6. Also, when fitting the data, I will use 100 epochs along with a batch size of 30. Finally, once training is complete and we have predicted the values of the test set, we must rescale the predictions by multiplying the standard deviation and adding the mean of the train set. We do this because we want to establish a trading strategy that picks stocks based on higher performance; so, if we do not rescale the features, we will be unable to distinguish which stocks were performing better since each stock has different means and standard deviations.
+#### Moreover, I will be using the Adam algorithm as an optimizer with a learning rate of .001 and a decay of 1e-6. Once training is complete and we have predicted the values of the test set, we must rescale the predictions by multiplying the standard deviation and adding the mean of the train set. We do this because we want to establish a trading strategy that picks stocks based on higher performance; so, if we do not rescale the features, we will be unable to distinguish which stocks were performing better since each stock has different means and standard deviations.
 
 ```python
 def predictions(self, model, epochs, X_train, y_train, X_test, y_test):
@@ -133,7 +132,7 @@ for df in securities_by_date:
     
 ```
 
-#### Below you can see what the model predicts for Apple.
+#### For reference, below you can see what the model predicts for Apple.
 
 ![alt text](https://github.com/pb1999/Momentum_Model/blob/main/Prediction_Apple.PNG)
         
@@ -202,7 +201,7 @@ for j in portfolio_performance:
 
 ```
 
-#### Finally, we compute the performance of the portfolio that uses this simple trading algorithm and compare it to the performance of the SPY. 
+#### Finally, we compute the performance of the portfolio that uses this simple trading algorithm and compare it to the performance of SPY. 
 
 ![alt text](https://github.com/pb1999/Momentum_Model/blob/main/Portfolio_Performance.PNG)
 
