@@ -1,4 +1,4 @@
-# Momentum_Model
+# Portfolio Optimization
 
 ## Introduction
 #### In this project, I will be using Deep Learning to predict future stock market returns and use those predictions to construct a portfolio with the top performing stocks that automatically rebalances on a weekly basis.
